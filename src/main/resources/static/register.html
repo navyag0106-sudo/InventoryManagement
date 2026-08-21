@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - InventoryPro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 480px;">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h2 class="auth-title">Create an Account</h2>
+            <p class="auth-subtitle">Join InventoryPro Management System</p>
+        </div>
+
+        <div class="auth-body">
+            <div id="alertBox"></div>
+
+            <form id="registerForm">
+                <div class="mb-3">
+                    <label class="form-label-custom" for="fullName">Full Name</label>
+                    <input type="text" class="form-control-custom" id="fullName" placeholder="e.g. John Doe" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-custom" for="username">Username</label>
+                    <input type="text" class="form-control-custom" id="username" placeholder="Choose a username" required minlength="3">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-custom" for="role">Account Role</label>
+                    <select class="form-select-custom" id="role" required>
+                        <option value="USER">Staff / Operator (Standard Access)</option>
+                        <option value="ADMIN">Administrator (Full Access)</option>
+                    </select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label-custom" for="password">Password</label>
+                        <input type="password" class="form-control-custom" id="password" placeholder="Min. 4 chars" required minlength="4">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom" for="confirmPassword">Confirm Password</label>
+                        <input type="password" class="form-control-custom" id="confirmPassword" placeholder="Repeat password" required minlength="4">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary-custom w-100 justify-content-center py-2 mt-2" id="registerBtn">
+                    <span id="btnText"><i class="fas fa-check-circle me-2"></i> Register Account</span>
+                    <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p class="small text-muted mb-0">
+                    Already have an account? 
+                    <a href="login.html" class="text-primary font-weight-600 text-decoration-none">Sign In here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const fullName = document.getElementById('fullName').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const role = document.getElementById('role').value;
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (password !== confirmPassword) {
+        showAlert('alertBox', 'Passwords do not match. Please try again.', 'warning');
+        return;
+    }
+
+    const registerBtn = document.getElementById('registerBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+
+    registerBtn.disabled = true;
+    btnText.classList.add('d-none');
+    btnSpinner.classList.remove('d-none');
+
+    try {
+        const res = await apiRequest('/auth/register', 'POST', {
+            username,
+            password,
+            fullName,
+            role
+        });
+
+        // Set token and redirect directly to dashboard
+        setToken(res.token);
+        setUser({
+            userId: res.userId,
+            username: res.username,
+            fullName: res.fullName,
+            role: res.role
+        });
+
+        showToast('Account created successfully! Redirecting...', 'success');
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 600);
+    } catch (err) {
+        registerBtn.disabled = false;
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+        showAlert('alertBox', err.message || 'Registration failed', 'danger');
+    }
+});
+</script>
+</body>
+</html>

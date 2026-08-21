@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive POS Terminal - InventoryPro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="css/style.css?v=1.2" rel="stylesheet">
+    <style>
+        .pos-container {
+            height: calc(100vh - var(--header-height) - 2rem);
+            display: flex;
+            gap: 1.25rem;
+        }
+        .pos-catalog {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #fff;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-card);
+        }
+        .pos-cart-panel {
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-card);
+        }
+        .category-pills {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            background: #f8fafc;
+            scrollbar-width: thin;
+        }
+        .category-pill-btn {
+            border: 1px solid var(--border-color);
+            background: #ffffff;
+            color: var(--text-secondary);
+            font-size: 0.825rem;
+            font-weight: 600;
+            padding: 0.4rem 0.85rem;
+            border-radius: var(--radius-full);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .category-pill-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .category-pill-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+        }
+        .product-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+            align-content: start;
+        }
+        .pos-product-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            user-select: none;
+        }
+        .pos-product-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: 0 6px 12px rgba(59, 130, 246, 0.12);
+        }
+        .pos-product-card.out-of-stock {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #fafafa;
+        }
+        .pos-product-card.out-of-stock:hover {
+            transform: none;
+            border-color: var(--border-color);
+            box-shadow: none;
+        }
+        .pos-product-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .pos-product-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            line-height: 1.25;
+            margin-bottom: 0.35rem;
+        }
+        .pos-product-code {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .pos-product-price {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--success-dark);
+        }
+        .cart-items-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem 1rem;
+        }
+        .cart-item-row {
+            display: flex;
+            flex-direction: column;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px dashed var(--border-color);
+            gap: 0.4rem;
+        }
+        .cart-qty-ctrl {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .cart-qty-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: #f8fafc;
+            color: var(--text-primary);
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .cart-qty-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+        .discount-chip {
+            padding: 0.15rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-color);
+            background: #fff;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .discount-chip:hover {
+            border-color: var(--warning);
+            color: var(--warning-dark);
+        }
+        .discount-chip.active {
+            background: var(--warning);
+            color: #fff;
+            border-color: var(--warning);
+        }
+        .receipt-ticket {
+            font-family: 'Courier New', Courier, monospace;
+            background: #fff;
+            padding: 1.5rem;
+            border: 1px dashed #94a3b8;
+            border-radius: 4px;
+        }
+        @media (max-width: 992px) {
+            .pos-container {
+                flex-direction: column;
+                height: auto;
+            }
+            .pos-cart-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <aside id="layoutSidebar"></aside>
+
+    <div class="app-main">
+        <div id="layoutHeader"></div>
+
+        <main class="page-content py-3">
+            <div id="alertBox"></div>
+
+            <div class="pos-container">
+                <!-- Left Catalog Panel -->
+                <div class="pos-catalog">
+                    <!-- Search and Scanner Header -->
+                    <div class="p-3 border-bottom d-flex gap-2 align-items-center">
+                        <div class="search-input-group flex-grow-1">
+                            <i class="fas fa-barcode"></i>
+                            <input type="text" class="form-control-custom" id="posSearch" placeholder="Scan SKU / Search Product (Press Enter to add)..." autofocus>
+                        </div>
+                        <button class="btn-secondary-custom" title="Refresh Catalog" onclick="loadPosCatalog()">
+                            <i class="fas fa-rotate"></i>
+                        </button>
+                    </div>
+
+                    <!-- Category Pills Filter -->
+                    <div class="category-pills" id="categoryPills">
+                        <button class="category-pill-btn active" data-cat="" onclick="filterByCat('', this)">All Items</button>
+                    </div>
+
+                    <!-- Product Grid -->
+                    <div class="product-grid" id="productGrid">
+                        <div class="text-center py-5 text-muted w-100">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <div class="mt-2">Loading interactive catalog...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Cart & Billing Panel -->
+                <div class="pos-cart-panel">
+                    <!-- Customer Information Header -->
+                    <div class="p-3 border-bottom bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 font-weight-700 text-primary">
+                                <i class="fas fa-user-tag me-1"></i> Customer & Order Info
+                            </h6>
+                            <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" onclick="clearCart()">
+                                <i class="fas fa-trash-alt me-1"></i> Clear Cart
+                            </button>
+                        </div>
+
+                        <!-- Customer Mobile & Name Inputs -->
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="fas fa-phone-alt text-muted"></i></span>
+                                    <input type="text" class="form-control" id="posCustomerPhone" placeholder="Mobile Number" oninput="onCustomerPhoneInput()">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
+                                    <input type="text" class="form-control" id="posCustomerName" placeholder="Customer Name" value="Walk-in Customer">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span id="custFoundBadge" class="badge bg-success-subtle text-success border border-success-subtle py-1 d-none" style="font-size: 0.7rem;">
+                                <i class="fas fa-check-circle me-1"></i> Registered Customer
+                            </span>
+                            <small class="text-muted ms-auto" style="font-size: 0.7rem;">Auto-creates new customer record</small>
+                        </div>
+
+                        <!-- Global Discount for All Products (Manual Input + Quick Preset Chips) -->
+                        <div class="mt-2 pt-2 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="small font-weight-700 text-secondary mb-0" style="font-size: 0.75rem;">
+                                    <i class="fas fa-tags text-warning me-1"></i> Discount for All Products:
+                                </label>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="discount-chip" onclick="setAndApplyGlobalDiscount(0)">0%</button>
+                                    <button type="button" class="discount-chip" onclick="setAndApplyGlobalDiscount(5)">5%</button>
+                                    <button type="button" class="discount-chip" onclick="setAndApplyGlobalDiscount(10)">10%</button>
+                                    <button type="button" class="discount-chip" onclick="setAndApplyGlobalDiscount(15)">15%</button>
+                                    <button type="button" class="discount-chip" onclick="setAndApplyGlobalDiscount(20)">20%</button>
+                                    <button type="button" class="discount-chip" onclick="setAndApplyGlobalDiscount(25)">25%</button>
+                                </div>
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white"><i class="fas fa-percent text-warning"></i></span>
+                                <input type="number" min="0" max="100" step="0.5" class="form-control form-control-sm text-end font-weight-700" id="globalDiscountInput" placeholder="Manual % discount for all (e.g. 12.5)" oninput="onGlobalDiscountChange(this.value)">
+                                <button class="btn btn-warning btn-sm font-weight-700 text-dark px-3" type="button" onclick="applyDiscountToAll(document.getElementById('globalDiscountInput').value)">
+                                    <i class="fas fa-check me-1"></i> Apply to All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cart Item List -->
+                    <div class="cart-items-container" id="cartItemsList">
+                        <div class="empty-state py-4">
+                            <div class="empty-state-icon" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                                <i class="fas fa-cart-shopping"></i>
+                            </div>
+                            <div class="font-weight-600">Cart is Empty</div>
+                            <small class="text-muted">Click or scan products to start billing.</small>
+                        </div>
+                    </div>
+
+                    <!-- Cart Summary & Checkout -->
+                    <div class="p-3 border-top bg-light">
+                        <div class="d-flex justify-content-between text-secondary small mb-1">
+                            <span>Original Gross (<span id="cartTotalCount">0</span> items):</span>
+                            <span id="cartOriginalSubtotal" class="font-weight-600">₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-success small mb-2" id="discountSummaryRow" style="display: none;">
+                            <span>Total Discount Savings:</span>
+                            <span id="cartDiscountAmount" class="font-weight-700">- ₹0.00</span>
+                        </div>
+
+                        <!-- Payment Method Selector -->
+                        <div class="my-2 pt-2 border-top">
+                            <label class="form-label-custom small font-weight-700 mb-1 text-secondary" style="font-size: 0.75rem;">
+                                <i class="fas fa-wallet text-primary me-1"></i> Select Payment Method:
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="posPaymentMethod" id="payCash" value="CASH" checked>
+                                    <label class="btn btn-outline-success w-100 py-1 font-weight-700 d-flex align-items-center justify-content-center gap-1" for="payCash" style="font-size: 0.8rem;">
+                                        <i class="fas fa-money-bill-wave"></i> Cash
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="posPaymentMethod" id="payOnline" value="ONLINE">
+                                    <label class="btn btn-outline-primary w-100 py-1 font-weight-700 d-flex align-items-center justify-content-center gap-1" for="payOnline" style="font-size: 0.8rem;">
+                                        <i class="fas fa-credit-card"></i> Online Payment
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3 pt-2 border-top">
+                            <span class="h6 mb-0 font-weight-700 text-dark">Payable Grand Total:</span>
+                            <span class="h4 mb-0 font-weight-800 text-success" id="cartGrandTotal">₹0.00</span>
+                        </div>
+
+                        <button class="btn-primary-custom w-100 justify-content-center py-2" id="checkoutBtn" onclick="checkoutOrder()" style="background-color: var(--success); border-color: var(--success); font-size: 1rem;" disabled>
+                            <span id="checkoutText"><i class="fas fa-cash-register me-2"></i> Pay & Save Invoice</span>
+                            <span id="checkoutSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal fade modal-custom" id="receiptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-check-circle me-2"></i> Sale Completed!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="receiptContent">
+                <div class="receipt-ticket text-center" id="printableReceipt">
+                    <h5 class="font-weight-800 mb-1">📦 INVENTORYPRO ERP</h5>
+                    <p class="small text-muted mb-2">Tax Invoice / Retail Bill</p>
+                    <div class="text-start small mb-2 border-bottom pb-2">
+                        <div><strong>Invoice:</strong> <span id="recInvoice"></span></div>
+                        <div><strong>Customer:</strong> <span id="recCustomer"></span></div>
+                        <div><strong>Contact:</strong> <span id="recPhone"></span></div>
+                        <div><strong>Date:</strong> <span id="recDate"></span></div>
+                        <div><strong>Payment Method:</strong> <span id="recPaymentMethod"></span></div>
+                    </div>
+                    <table class="table table-sm text-start mb-2" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr class="border-bottom">
+                                <th>Item</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recItems"></tbody>
+                    </table>
+                    <div class="border-top pt-2 text-end small">
+                        <div class="d-flex justify-content-between">
+                            <span>Subtotal:</span>
+                            <span id="recSubtotal">₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-success font-weight-700" id="recDiscountRow" style="display: none;">
+                            <span>Discount Savings:</span>
+                            <span id="recDiscount">- ₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between h6 font-weight-800 text-dark border-top pt-1 mt-1">
+                            <span>FINAL TOTAL:</span>
+                            <span id="recTotal" class="text-success">₹0.00</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 text-center text-muted small border-top">
+                        *** THANK YOU FOR YOUR BUSINESS! ***
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" onclick="printReceipt()">
+                    <i class="fas fa-print me-1"></i> Print Receipt
+                </button>
+                <button type="button" class="btn-primary-custom" data-bs-dismiss="modal">
+                    <i class="fas fa-plus me-1"></i> Next Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Online Payment QR Code Modal -->
+<div class="modal fade modal-custom" id="qrPaymentModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-qrcode me-2"></i> Scan & Pay (Online UPI)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="badge bg-primary-subtle text-primary font-weight-700 mb-2 px-3 py-1" style="font-size: 0.85rem;">
+                    <i class="fas fa-mobile-screen-button me-1"></i> Scan with GPay / PhonePe / Paytm / BHIM
+                </div>
+
+                <div class="my-3 p-3 bg-white border rounded shadow-sm d-inline-block">
+                    <img id="qrCodeImg" src="" alt="Payment QR Code" style="width: 200px; height: 200px; object-fit: contain;">
+                </div>
+
+                <div class="border-top border-bottom py-2 my-2 bg-light rounded">
+                    <div class="text-muted small">Payable Amount:</div>
+                    <h3 class="text-success font-weight-800 mb-0" id="qrPayAmount">₹0.00</h3>
+                </div>
+
+                <div class="text-start small mt-3 p-2 bg-light rounded border">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Customer:</span>
+                        <strong id="qrCustomerName" class="text-dark">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Mobile:</span>
+                        <strong id="qrCustomerPhone" class="text-dark">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">UPI ID:</span>
+                        <code class="text-primary font-weight-700" id="qrDisplayUpi">inventorypro@upi</code>
+                    </div>
+                </div>
+
+                <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                    <i class="fas fa-info-circle me-1 text-info"></i> Confirming will store transaction in <strong>online_payments</strong> table.
+                </small>
+            </div>
+            <div class="modal-footer justify-content-between bg-light">
+                <button type="button" class="btn btn-secondary py-2" data-bs-dismiss="modal">
+                    <i class="fas fa-arrow-left me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-success py-2 px-4 font-weight-700" id="confirmQrPayBtn" onclick="submitOnlinePayment()">
+                    <span id="confirmQrText"><i class="fas fa-check-circle me-1"></i> Confirm & Save Invoice</span>
+                    <span id="confirmQrSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script>
+let catalog = [];
+let cart = []; // Array of { product, quantity, discountPercentage }
+let activeCategory = '';
+let receiptModal = null;
+let qrPaymentModal = null;
+let phoneLookupTimeout = null;
+
+// Web Audio subtle sound effects for tactile feedback
+function playBeep(success = true) {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = success ? 880 : 300;
+        gain.gain.value = 0.08;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+    } catch (e) {}
+}
+
+(async function init() {
+    await requireLogin();
+    renderLayout('pos.html', 'POS Terminal', 'Point of Sale');
+
+    receiptModal = new bootstrap.Modal(document.getElementById('receiptModal'));
+    qrPaymentModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
+
+    await loadCategories();
+    await loadPosCatalog();
+
+    // Barcode scanner / search input enter listener
+    document.getElementById('posSearch').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const term = e.target.value.trim().toLowerCase();
+            if (!term) return;
+
+            const exact = catalog.find(p => p.productCode.toLowerCase() === term || p.productName.toLowerCase() === term);
+            if (exact) {
+                addToCart(exact.productId);
+                e.target.value = '';
+            } else {
+                filterCatalog(term);
+            }
+        }
+    });
+
+    document.getElementById('posSearch').addEventListener('input', (e) => {
+        filterCatalog(e.target.value.trim().toLowerCase());
+    });
+})();
+
+function onCustomerPhoneInput() {
+    clearTimeout(phoneLookupTimeout);
+    const phone = document.getElementById('posCustomerPhone').value.trim();
+    const badge = document.getElementById('custFoundBadge');
+
+    if (phone.length >= 7) {
+        phoneLookupTimeout = setTimeout(async () => {
+            try {
+                const customer = await apiRequest(`/customers/phone/${phone}`);
+                if (customer && customer.name) {
+                    document.getElementById('posCustomerName').value = customer.name;
+                    badge.classList.remove('d-none');
+                    badge.innerHTML = `<i class="fas fa-check-circle me-1"></i> Registered: ${customer.name}`;
+                } else {
+                    badge.classList.add('d-none');
+                }
+            } catch (e) {
+                badge.classList.add('d-none');
+            }
+        }, 400);
+    } else {
+        badge.classList.add('d-none');
+    }
+}
+
+async function loadCategories() {
+    try {
+        const cats = await apiRequest('/categories');
+        const container = document.getElementById('categoryPills');
+        container.innerHTML = '<button class="category-pill-btn active" data-cat="" onclick="filterByCat(\'\', this)">All Items</button>';
+        cats.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'category-pill-btn';
+            btn.dataset.cat = c.categoryId;
+            btn.textContent = c.categoryName;
+            btn.onclick = () => filterByCat(c.categoryId, btn);
+            container.appendChild(btn);
+        });
+    } catch (e) {}
+}
+
+function filterByCat(catId, btn) {
+    activeCategory = String(catId);
+    document.querySelectorAll('#categoryPills .category-pill-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterCatalog(document.getElementById('posSearch').value.trim().toLowerCase());
+}
+
+async function loadPosCatalog() {
+    try {
+        catalog = await apiRequest('/products');
+        renderProductGrid(catalog);
+    } catch (e) {
+        showToast('Failed to load products: ' + e.message, 'danger');
+    }
+}
+
+function filterCatalog(term) {
+    const filtered = catalog.filter(p => {
+        if (activeCategory && (!p.category || String(p.category.categoryId) !== activeCategory)) {
+            return false;
+        }
+        if (term) {
+            return p.productName.toLowerCase().includes(term) || p.productCode.toLowerCase().includes(term);
+        }
+        return true;
+    });
+    renderProductGrid(filtered);
+}
+
+function renderProductGrid(products) {
+    const grid = document.getElementById('productGrid');
+    if (!products.length) {
+        grid.innerHTML = `
+            <div class="text-center py-5 text-muted w-100">
+                <i class="fas fa-box-open fa-2x mb-2 text-muted"></i>
+                <div class="font-weight-600">No products found</div>
+                <small>Try changing your category or search term.</small>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = products.map(p => {
+        const cartItem = cart.find(c => c.product.productId === p.productId);
+        const inCartQty = cartItem ? cartItem.quantity : 0;
+        const availableQty = p.quantity - inCartQty;
+        const isOutOfStock = availableQty <= 0;
+
+        return `
+            <div class="pos-product-card ${isOutOfStock ? 'out-of-stock' : ''}" onclick="${isOutOfStock ? '' : `addToCart(${p.productId})`}">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="pos-product-icon">
+                            <i class="fas fa-cube"></i>
+                        </div>
+                        <span class="badge-pill ${availableQty <= p.minimumStockLevel ? (availableQty <= 0 ? 'badge-out-of-stock' : 'badge-low-stock') : 'badge-in-stock'}" style="font-size: 0.7rem;">
+                            ${availableQty} in stock
+                        </span>
+                    </div>
+                    <div class="pos-product-name">${p.productName}</div>
+                    <div class="pos-product-code"><code>${p.productCode}</code></div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                    <span class="pos-product-price">${formatCurrency(p.sellingPrice)}</span>
+                    <button class="btn btn-sm btn-primary-custom py-0 px-2" style="font-size: 0.75rem;" ${isOutOfStock ? 'disabled' : ''}>
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function addToCart(productId) {
+    const product = catalog.find(p => p.productId === productId);
+    if (!product) return;
+
+    const existing = cart.find(c => c.product.productId === productId);
+    const currentQty = existing ? existing.quantity : 0;
+
+    if (currentQty + 1 > product.quantity) {
+        playBeep(false);
+        showToast(`Cannot add more. Only ${product.quantity} units available in inventory.`, 'warning');
+        return;
+    }
+
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        cart.push({ product, quantity: 1, discountPercentage: product.discount || 0.0 });
+    }
+
+    playBeep(true);
+    updateCartUI();
+    renderProductGrid(catalog);
+}
+
+function updateCartQty(productId, delta) {
+    const item = cart.find(c => c.product.productId === productId);
+    if (!item) return;
+
+    const newQty = item.quantity + delta;
+    if (newQty <= 0) {
+        cart = cart.filter(c => c.product.productId !== productId);
+    } else if (newQty > item.product.quantity) {
+        showToast(`Stock limit reached (${item.product.quantity} max)`, 'warning');
+        return;
+    } else {
+        item.quantity = newQty;
+    }
+
+    updateCartUI();
+    renderProductGrid(catalog);
+}
+
+function updateItemDiscount(productId, val) {
+    const item = cart.find(c => c.product.productId === productId);
+    if (!item) return;
+
+    const disc = parseFloat(val) || 0.0;
+    item.discountPercentage = Math.max(0, Math.min(100, disc));
+    updateCartUI();
+}
+
+function setAndApplyGlobalDiscount(val) {
+    const input = document.getElementById('globalDiscountInput');
+    if (input) input.value = val === 0 ? '' : val;
+    applyDiscountToAll(val);
+}
+
+function onGlobalDiscountChange(val) {
+    const disc = parseFloat(val) || 0.0;
+    applyDiscountToAll(disc);
+}
+
+function applyDiscountToAll(percent) {
+    const disc = Math.max(0, Math.min(100, parseFloat(percent) || 0.0));
+    cart.forEach(item => {
+        item.discountPercentage = disc;
+    });
+    updateCartUI();
+}
+
+function clearCart() {
+    cart = [];
+    updateCartUI();
+    renderProductGrid(catalog);
+}
+
+function updateCartUI() {
+    const container = document.getElementById('cartItemsList');
+    const totalCountEl = document.getElementById('cartTotalCount');
+    const originalSubtotalEl = document.getElementById('cartOriginalSubtotal');
+    const discountRow = document.getElementById('discountSummaryRow');
+    const discountAmountEl = document.getElementById('cartDiscountAmount');
+    const grandTotalEl = document.getElementById('cartGrandTotal');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+
+    if (cart.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state py-4">
+                <div class="empty-state-icon" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                    <i class="fas fa-cart-shopping"></i>
+                </div>
+                <div class="font-weight-600">Cart is Empty</div>
+                <small class="text-muted">Click or scan products to start billing.</small>
+            </div>
+        `;
+        totalCountEl.textContent = '0';
+        originalSubtotalEl.textContent = '₹0.00';
+        grandTotalEl.textContent = '₹0.00';
+        discountRow.style.display = 'none';
+        checkoutBtn.disabled = true;
+        return;
+    }
+
+    let totalQty = 0;
+    let totalOriginalAmount = 0;
+    let totalDiscountedAmount = 0;
+
+    container.innerHTML = cart.map(item => {
+        const p = item.product;
+        const origUnit = p.sellingPrice;
+        const itemDisc = item.discountPercentage || 0.0;
+        const discFactor = (100.0 - itemDisc) / 100.0;
+        const discountedUnit = Math.round(origUnit * discFactor * 100.0) / 100.0;
+        const lineTotal = item.quantity * discountedUnit;
+
+        totalQty += item.quantity;
+        totalOriginalAmount += (item.quantity * origUnit);
+        totalDiscountedAmount += lineTotal;
+
+        const hasItemDisc = itemDisc > 0;
+
+        return `
+            <div class="cart-item-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div style="flex: 1; min-width: 0;">
+                        <span class="font-weight-700 text-truncate d-block" style="font-size: 0.875rem;">${p.productName}</span>
+                        <div class="d-flex align-items-center gap-1">
+                            ${hasItemDisc ? `<small class="text-muted text-decoration-line-through">${formatCurrency(origUnit)}</small>` : ''}
+                            <span class="small font-weight-700 text-dark">${formatCurrency(discountedUnit)}</span>
+                        </div>
+                    </div>
+                    <div class="cart-qty-ctrl">
+                        <button type="button" class="cart-qty-btn" onclick="updateCartQty(${p.productId}, -1)">-</button>
+                        <span class="font-weight-700 px-1" style="font-size: 0.85rem;">${item.quantity}</span>
+                        <button type="button" class="cart-qty-btn" onclick="updateCartQty(${p.productId}, 1)">+</button>
+                    </div>
+                    <div class="text-end" style="width: 85px;">
+                        <strong class="text-success" style="font-size: 0.9rem;">${formatCurrency(lineTotal)}</strong>
+                    </div>
+                </div>
+
+                <!-- Individual Product Line-Item Discount Control -->
+                <div class="d-flex align-items-center justify-content-between mt-1 pt-1 border-top" style="font-size: 0.75rem;">
+                    <span class="text-muted"><i class="fas fa-percent text-warning me-1"></i> Item Discount:</span>
+                    <div class="d-flex align-items-center gap-1">
+                        <input type="number" min="0" max="100" step="1" class="form-control form-control-sm text-end py-0 font-weight-700 text-warning" style="width: 55px; height: 22px; font-size: 0.75rem;" value="${itemDisc}" onchange="updateItemDiscount(${p.productId}, this.value)">
+                        <span class="text-muted font-weight-700">%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const totalSavings = totalOriginalAmount - totalDiscountedAmount;
+
+    totalCountEl.textContent = totalQty;
+    originalSubtotalEl.textContent = formatCurrency(totalOriginalAmount);
+
+    if (totalSavings > 0) {
+        discountRow.style.display = 'flex';
+        discountAmountEl.textContent = '- ' + formatCurrency(totalSavings);
+    } else {
+        discountRow.style.display = 'none';
+    }
+
+    grandTotalEl.textContent = formatCurrency(totalDiscountedAmount);
+    checkoutBtn.disabled = false;
+}
+
+async function checkoutOrder() {
+    if (!cart.length) return;
+
+    const customerName = document.getElementById('posCustomerName').value.trim() || 'Walk-in Customer';
+    const customerPhone = document.getElementById('posCustomerPhone').value.trim();
+    const paymentMethod = document.querySelector('input[name="posPaymentMethod"]:checked')?.value || 'CASH';
+
+    if (paymentMethod === 'ONLINE') {
+        let grandTotal = 0;
+        cart.forEach(item => {
+            const origUnit = item.product.sellingPrice;
+            const itemDisc = item.discountPercentage || 0.0;
+            const discountedUnit = Math.round(origUnit * ((100.0 - itemDisc) / 100.0) * 100.0) / 100.0;
+            grandTotal += (item.quantity * discountedUnit);
+        });
+
+        const cfg = window.MERCHANT_CONFIG || { upiId: "inventorypro@upi", merchantName: "InventoryPro ERP" };
+        document.getElementById('qrDisplayUpi').textContent = cfg.upiId;
+        document.getElementById('qrCustomerName').textContent = customerName;
+        document.getElementById('qrCustomerPhone').textContent = customerPhone || 'N/A';
+        document.getElementById('qrPayAmount').textContent = formatCurrency(grandTotal);
+
+        if (cfg.customQrImageUrl && cfg.customQrImageUrl.trim() !== '') {
+            document.getElementById('qrCodeImg').src = cfg.customQrImageUrl;
+        } else {
+            const qrData = `upi://pay?pa=${encodeURIComponent(cfg.upiId)}&pn=${encodeURIComponent(cfg.merchantName)}&am=${grandTotal.toFixed(2)}&cu=INR`;
+            document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrData)}`;
+        }
+
+        qrPaymentModal.show();
+        return;
+    }
+
+    await processPaymentAPI('CASH');
+}
+
+async function submitOnlinePayment() {
+    qrPaymentModal.hide();
+    await processPaymentAPI('ONLINE');
+}
+
+async function processPaymentAPI(paymentMethod) {
+    const customerName = document.getElementById('posCustomerName').value.trim() || 'Walk-in Customer';
+    const customerPhone = document.getElementById('posCustomerPhone').value.trim();
+
+    const items = cart.map(c => ({
+        productId: c.product.productId,
+        quantity: c.quantity,
+        discountPercentage: c.discountPercentage || 0.0
+    }));
+
+    const btn = document.getElementById('checkoutBtn');
+    const text = document.getElementById('checkoutText');
+    const spinner = document.getElementById('checkoutSpinner');
+
+    btn.disabled = true;
+    text.classList.add('d-none');
+    spinner.classList.remove('d-none');
+
+    try {
+        const sale = await apiRequest('/sales', 'POST', {
+            customerName,
+            customerPhone,
+            paymentMethod,
+            items
+        });
+
+        playBeep(true);
+        if (paymentMethod === 'ONLINE') {
+            showToast('Online Payment recorded in online_payments table & Sale completed!', 'success');
+        } else {
+            showToast('Payment successful! Customer record and stock updated.', 'success');
+        }
+
+        // Populate receipt modal
+        document.getElementById('recInvoice').textContent = `#INV-${sale.saleId}`;
+        document.getElementById('recCustomer').textContent = sale.customerName;
+        document.getElementById('recPhone').textContent = sale.customerPhone || 'N/A';
+        document.getElementById('recDate').textContent = formatDate(sale.saleDate);
+        document.getElementById('recPaymentMethod').innerHTML = sale.paymentMethod === 'ONLINE' 
+            ? '<span class="badge bg-primary text-white"><i class="fas fa-credit-card me-1"></i> Online Payment (UPI)</span>' 
+            : '<span class="badge bg-success text-white"><i class="fas fa-money-bill-wave me-1"></i> Cash</span>';
+        
+        let originalSubtotal = 0;
+        const recBody = document.getElementById('recItems');
+        recBody.innerHTML = (sale.saleItems || []).map(it => {
+            const orig = it.originalPrice || it.sellingPrice;
+            originalSubtotal += (orig * it.quantity);
+            const isDiscounted = it.discountPercentage && it.discountPercentage > 0;
+
+            return `
+                <tr>
+                    <td>
+                        <div>${it.product ? it.product.productName : 'Item'}</div>
+                        ${isDiscounted ? `<small class="text-muted text-decoration-line-through">${formatCurrency(orig)}</small> <span class="badge bg-warning text-dark py-0" style="font-size: 0.65rem;">-${it.discountPercentage}%</span>` : ''}
+                    </td>
+                    <td class="text-center">${it.quantity}</td>
+                    <td class="text-end">${formatCurrency(it.sellingPrice)}</td>
+                    <td class="text-end font-weight-700">${formatCurrency(it.subtotal || (it.quantity * it.sellingPrice))}</td>
+                </tr>
+            `;
+        }).join('');
+
+        document.getElementById('recSubtotal').textContent = formatCurrency(originalSubtotal);
+        const discountRow = document.getElementById('recDiscountRow');
+        if (sale.discountAmount && sale.discountAmount > 0) {
+            discountRow.style.display = 'flex';
+            document.getElementById('recDiscount').textContent = `- ${formatCurrency(sale.discountAmount)}`;
+        } else {
+            discountRow.style.display = 'none';
+        }
+
+        document.getElementById('recTotal').textContent = formatCurrency(sale.totalAmount);
+
+        receiptModal.show();
+        clearCart();
+        await loadPosCatalog();
+    } catch (err) {
+        playBeep(false);
+        showToast(err.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        text.classList.remove('d-none');
+        spinner.classList.add('d-none');
+    }
+}
+
+function printReceipt() {
+    const printContent = document.getElementById('printableReceipt').innerHTML;
+    const win = window.open('', '', 'height=550,width=420');
+    win.document.write('<html><head><title>Invoice Receipt</title><style>body{font-family:monospace;padding:20px;} table{width:100%;border-collapse:collapse;} th,td{padding:4px;} .text-end{text-align:right;} .text-center{text-align:center;} .border-top{border-top:1px dashed #000;margin-top:5px;} .d-flex{display:flex;justify-content:space-between;}</style></head><body>');
+    win.document.write(printContent);
+    win.document.write('</body></html>');
+    win.document.close();
+    win.print();
+}
+</script>
+</body>
+</html>

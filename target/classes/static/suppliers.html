@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Management - InventoryPro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-container">
+    <aside id="layoutSidebar"></aside>
+
+    <div class="app-main">
+        <div id="layoutHeader"></div>
+
+        <main class="page-content">
+            <div id="alertBox"></div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-800 text-primary mb-1">Supplier Directory</h3>
+                    <p class="text-muted mb-0 small">Manage vendors, contact information, GST details, and supplier catalogs.</p>
+                </div>
+                <button class="btn-primary-custom" onclick="openSupplierModal()">
+                    <i class="fas fa-plus"></i> Add New Supplier
+                </button>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <div class="search-input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control-custom" id="searchInput" placeholder="Search by name, company, or GST..." oninput="filterSuppliers()">
+                </div>
+            </div>
+
+            <!-- Suppliers Table Card -->
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h5 class="card-title-custom">
+                        <i class="fas fa-handshake text-primary"></i> Registered Suppliers (<span id="supplierCount">0</span>)
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-custom-wrapper">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Supplier Name</th>
+                                    <th>Company</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>GST Number</th>
+                                    <th>Address</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suppliersTable">
+                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading suppliers...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Supplier Modal -->
+<div class="modal fade modal-custom" id="supplierModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">
+                    <i class="fas fa-handshake text-primary me-2"></i> Add Supplier
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="supplierForm">
+                <div class="modal-body">
+                    <input type="hidden" id="supplierId">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-custom" for="supplierName">Supplier / Contact Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control-custom" id="supplierName" placeholder="e.g. Rajesh Kumar" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom" for="companyName">Company / Business Name</label>
+                            <input type="text" class="form-control-custom" id="companyName" placeholder="e.g. ABC Electronics Ltd.">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label-custom" for="phone">Phone Number</label>
+                            <input type="text" class="form-control-custom" id="phone" placeholder="e.g. 9876543210">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom" for="email">Email Address</label>
+                            <input type="email" class="form-control-custom" id="email" placeholder="vendor@example.com">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label-custom" for="gstNumber">GSTIN / Tax ID</label>
+                            <input type="text" class="form-control-custom" id="gstNumber" placeholder="e.g. 29AAAAA0000A1Z5">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom" for="address">Business Address</label>
+                            <input type="text" class="form-control-custom" id="address" placeholder="City, State, Country">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-custom" id="saveSupplierBtn">
+                        <span id="saveBtnText"><i class="fas fa-save me-1"></i> Save Supplier</span>
+                        <span id="saveBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Supplier Products Modal -->
+<div class="modal fade modal-custom" id="supplierProductsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="supProdTitle">
+                    <i class="fas fa-boxes-stacked text-primary me-2"></i> Supplier Catalog
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-custom-wrapper">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Product Name</th>
+                                <th>Cost Price</th>
+                                <th>Selling Price</th>
+                                <th>Stock Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supProductsBody">
+                            <tr><td colspan="5" class="text-center py-4 text-muted">Loading catalog...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade modal-custom" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-trash-alt me-2"></i> Delete Supplier
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4 text-center">
+                <div class="text-danger mb-3"><i class="fas fa-triangle-exclamation fa-3x"></i></div>
+                <h6 class="font-weight-700">Delete this supplier?</h6>
+                <p class="text-muted small mb-0" id="deleteSupplierName"></p>
+                <input type="hidden" id="deleteSupplierId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-danger-custom" onclick="executeDelete()">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script>
+let allSuppliers = [];
+let supplierModal = null;
+let deleteModal = null;
+let supplierProductsModal = null;
+let isEditing = false;
+let currentUser = null;
+
+(async function init() {
+    currentUser = await requireLogin('ADMIN');
+    renderLayout('suppliers.html', 'Suppliers', 'Supplier Management');
+
+    supplierModal = new bootstrap.Modal(document.getElementById('supplierModal'));
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    supplierProductsModal = new bootstrap.Modal(document.getElementById('supplierProductsModal'));
+
+    await loadSuppliers();
+})();
+
+async function loadSuppliers() {
+    showSkeleton('suppliersTable', 4, 7);
+    try {
+        allSuppliers = await apiRequest('/suppliers');
+        filterSuppliers();
+    } catch (e) {
+        showToast('Failed to load suppliers: ' + e.message, 'danger');
+    }
+}
+
+function filterSuppliers() {
+    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+    const filtered = allSuppliers.filter(s => {
+        if (!term) return true;
+        return (s.supplierName || '').toLowerCase().includes(term) ||
+               (s.companyName || '').toLowerCase().includes(term) ||
+               (s.phone || '').toLowerCase().includes(term) ||
+               (s.email || '').toLowerCase().includes(term) ||
+               (s.gstNumber || '').toLowerCase().includes(term);
+    });
+    renderSuppliers(filtered);
+}
+
+function renderSuppliers(suppliers) {
+    document.getElementById('supplierCount').textContent = suppliers.length;
+    const tbody = document.getElementById('suppliersTable');
+    const isAdmin = currentUser && (currentUser.role || '').toUpperCase() === 'ADMIN';
+
+    if (suppliers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-handshake"></i></div>
+                        <h6 class="empty-state-title">No suppliers found</h6>
+                        <p class="empty-state-text">Add supplier records to manage stock purchases.</p>
+                        <button class="btn-primary-custom" onclick="openSupplierModal()">
+                            <i class="fas fa-plus"></i> Add Supplier
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = suppliers.map(s => `
+        <tr>
+            <td><strong>${s.supplierName}</strong></td>
+            <td>${s.companyName ? `<span class="badge-pill bg-light border text-dark">${s.companyName}</span>` : '<span class="text-muted">-</span>'}</td>
+            <td>${s.phone ? `<a href="tel:${s.phone}" class="text-decoration-none text-secondary"><i class="fas fa-phone small text-muted me-1"></i>${s.phone}</a>` : '-'}</td>
+            <td>${s.email ? `<a href="mailto:${s.email}" class="text-decoration-none text-primary"><i class="fas fa-envelope small text-muted me-1"></i>${s.email}</a>` : '-'}</td>
+            <td>${s.gstNumber ? `<code>${s.gstNumber}</code>` : '-'}</td>
+            <td><small class="text-muted">${s.address || '-'}</small></td>
+            <td class="text-end">
+                <div class="d-inline-flex gap-1">
+                    <button class="btn-icon-action" title="View Supplied Products" onclick="viewSupplierProducts(${s.supplierId}, '${s.supplierName.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-boxes-stacked text-info"></i>
+                    </button>
+                    <button class="btn-icon-action" title="Edit" onclick='editSupplier(${JSON.stringify(s).replace(/'/g, "&apos;")})'>
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    ${isAdmin ? `
+                    <button class="btn-icon-action btn-icon-danger" title="Delete" onclick="confirmDelete(${s.supplierId}, '${s.supplierName.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    ` : ''}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openSupplierModal() {
+    isEditing = false;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-handshake text-primary me-2"></i> Add New Supplier';
+    document.getElementById('saveBtnText').innerHTML = '<i class="fas fa-save me-1"></i> Save Supplier';
+    document.getElementById('supplierForm').reset();
+    document.getElementById('supplierId').value = '';
+    supplierModal.show();
+}
+
+function editSupplier(s) {
+    isEditing = true;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-pen-to-square text-primary me-2"></i> Edit Supplier';
+    document.getElementById('saveBtnText').innerHTML = '<i class="fas fa-check me-1"></i> Update Supplier';
+    document.getElementById('supplierId').value = s.supplierId;
+    document.getElementById('supplierName').value = s.supplierName;
+    document.getElementById('companyName').value = s.companyName || '';
+    document.getElementById('phone').value = s.phone || '';
+    document.getElementById('email').value = s.email || '';
+    document.getElementById('gstNumber').value = s.gstNumber || '';
+    document.getElementById('address').value = s.address || '';
+    supplierModal.show();
+}
+
+document.getElementById('supplierForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('saveSupplierBtn');
+    const btnText = document.getElementById('saveBtnText');
+    const btnSpinner = document.getElementById('saveBtnSpinner');
+
+    const payload = {
+        supplierName: document.getElementById('supplierName').value.trim(),
+        companyName: document.getElementById('companyName').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        gstNumber: document.getElementById('gstNumber').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        status: 'ACTIVE'
+    };
+
+    saveBtn.disabled = true;
+    btnText.classList.add('d-none');
+    btnSpinner.classList.remove('d-none');
+
+    try {
+        if (isEditing) {
+            const id = document.getElementById('supplierId').value;
+            await apiRequest('/suppliers/' + id, 'PUT', payload);
+            showToast('Supplier updated successfully', 'success');
+        } else {
+            await apiRequest('/suppliers', 'POST', payload);
+            showToast('Supplier added successfully', 'success');
+        }
+        supplierModal.hide();
+        await loadSuppliers();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    } finally {
+        saveBtn.disabled = false;
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+    }
+});
+
+async function viewSupplierProducts(supId, supName) {
+    document.getElementById('supProdTitle').innerHTML = `<i class="fas fa-boxes-stacked text-primary me-2"></i> Products by ${supName}`;
+    const tbody = document.getElementById('supProductsBody');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Loading catalog...</td></tr>';
+    supplierProductsModal.show();
+
+    try {
+        const prods = await apiRequest('/suppliers/' + supId + '/products');
+        if (!prods.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No products currently assigned to this supplier.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = prods.map(p => `
+            <tr>
+                <td><code>${p.productCode}</code></td>
+                <td><strong>${p.productName}</strong></td>
+                <td>${formatCurrency(p.unitPrice)}</td>
+                <td>${formatCurrency(p.sellingPrice)}</td>
+                <td><span class="font-weight-700">${p.quantity} units</span></td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">${e.message}</td></tr>`;
+    }
+}
+
+function confirmDelete(id, name) {
+    document.getElementById('deleteSupplierId').value = id;
+    document.getElementById('deleteSupplierName').textContent = `"${name}" (ID: ${id})`;
+    deleteModal.show();
+}
+
+async function executeDelete() {
+    const id = document.getElementById('deleteSupplierId').value;
+    try {
+        await apiRequest('/suppliers/' + id, 'DELETE');
+        showToast('Supplier deleted successfully', 'success');
+        deleteModal.hide();
+        await loadSuppliers();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Monitoring - InventoryPro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-container">
+    <aside id="layoutSidebar"></aside>
+
+    <div class="app-main">
+        <div id="layoutHeader"></div>
+
+        <main class="page-content">
+            <div id="alertBox"></div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-800 text-primary mb-1">Stock Levels & Movements</h3>
+                    <p class="text-muted mb-0 small">Monitor warehouse stock balances, reorder indicators, and full transaction history.</p>
+                </div>
+            </div>
+
+            <!-- Tab Filter Controls -->
+            <div class="card-custom mb-4">
+                <div class="card-body-custom py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-primary-custom" id="btnAll" onclick="changeFilter('all')">
+                            <i class="fas fa-boxes me-1"></i> All Products
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary-custom" id="btnLow" onclick="changeFilter('low')">
+                            <i class="fas fa-exclamation-triangle text-warning me-1"></i> Low Stock Alerts
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary-custom" id="btnOut" onclick="changeFilter('out')">
+                            <i class="fas fa-circle-xmark text-danger me-1"></i> Out of Stock
+                        </button>
+                    </div>
+
+                    <div class="search-input-group" style="max-width: 260px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="form-control-custom form-control-sm" id="searchInput" placeholder="Search stock table..." oninput="filterTable()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Stock Table Card -->
+            <div class="card-custom mb-4">
+                <div class="card-header-custom">
+                    <h5 class="card-title-custom">
+                        <i class="fas fa-warehouse text-primary"></i> Current Stock Balances (<span id="stockCount">0</span>)
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-custom-wrapper">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>Stock Level Ratio</th>
+                                    <th>Current Balance</th>
+                                    <th>Min Threshold</th>
+                                    <th>Stock Status</th>
+                                    <th class="text-end">Quick Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stockTable">
+                                <tr><td colspan="8" class="text-center py-4 text-muted">Loading inventory balances...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Audit History Card -->
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h5 class="card-title-custom">
+                        <i class="fas fa-list-check text-primary"></i> Stock Movement Audit Trail
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-custom-wrapper">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Txn ID</th>
+                                    <th>Product</th>
+                                    <th>Movement Type</th>
+                                    <th>Quantity</th>
+                                    <th>Previous Qty</th>
+                                    <th>New Balance</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTable">
+                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading movement logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script>
+let currentStockList = [];
+let activeFilter = 'all';
+
+(async function init() {
+    await requireLogin();
+    renderLayout('stock.html', 'Stock Monitoring', 'Inventory Levels');
+
+    await loadStock('all');
+    await loadTransactions();
+})();
+
+async function changeFilter(type) {
+    activeFilter = type;
+    document.getElementById('btnAll').className = type === 'all' ? 'btn btn-sm btn-primary-custom' : 'btn btn-sm btn-secondary-custom';
+    document.getElementById('btnLow').className = type === 'low' ? 'btn btn-sm btn-primary-custom' : 'btn btn-sm btn-secondary-custom';
+    document.getElementById('btnOut').className = type === 'out' ? 'btn btn-sm btn-primary-custom' : 'btn btn-sm btn-secondary-custom';
+
+    await loadStock(type);
+}
+
+async function loadStock(filter) {
+    showSkeleton('stockTable', 5, 8);
+    let path = '/stock';
+    if (filter === 'low') path = '/stock/low';
+    if (filter === 'out') path = '/stock/out-of-stock';
+
+    try {
+        currentStockList = await apiRequest(path);
+        filterTable();
+    } catch (e) {
+        showToast('Failed to load stock data: ' + e.message, 'danger');
+    }
+}
+
+function filterTable() {
+    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+    const filtered = currentStockList.filter(p => {
+        if (!term) return true;
+        return (p.productName || '').toLowerCase().includes(term) ||
+               (p.productCode || '').toLowerCase().includes(term) ||
+               (p.category ? p.category.categoryName.toLowerCase().includes(term) : false);
+    });
+    renderStock(filtered);
+}
+
+function renderStock(products) {
+    document.getElementById('stockCount').textContent = products.length;
+    const tbody = document.getElementById('stockTable');
+
+    if (!products.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-boxes-stacked"></i></div>
+                        <h6 class="empty-state-title">No items found</h6>
+                        <p class="empty-state-text">No products match this stock filter.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = products.map(p => {
+        const qty = p.quantity || 0;
+        const min = p.minimumStockLevel || 1;
+        const percent = Math.min(100, Math.round((qty / (min * 3)) * 100));
+        let barColor = 'bg-success';
+        if (qty === 0) barColor = 'bg-danger';
+        else if (qty <= min) barColor = 'bg-warning';
+
+        return `
+            <tr>
+                <td><code>${p.productCode}</code></td>
+                <td><strong>${p.productName}</strong></td>
+                <td><span class="badge-pill bg-light border text-secondary">${p.category ? p.category.categoryName : '-'}</span></td>
+                <td style="min-width: 140px;">
+                    <div class="progress" style="height: 7px; border-radius: 4px;">
+                        <div class="progress-bar ${barColor}" style="width: ${percent}%"></div>
+                    </div>
+                </td>
+                <td><span class="font-weight-700">${qty} units</span></td>
+                <td><span class="text-muted">${min} units</span></td>
+                <td>${stockBadge(p.stockStatus, qty, min)}</td>
+                <td class="text-end">
+                    <a href="purchases.html" class="btn btn-sm btn-primary-custom py-1 px-2" style="font-size: 0.775rem;">
+                        <i class="fas fa-cart-plus me-1"></i> Restock
+                    </a>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function loadTransactions() {
+    showSkeleton('transactionsTable', 4, 7);
+    try {
+        const txns = await apiRequest('/stock/transactions');
+        const tbody = document.getElementById('transactionsTable');
+
+        if (!txns.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No stock movement logs recorded yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = txns.slice(0, 50).map(t => {
+            let badgeClass = 'badge-pill bg-light border text-dark';
+            let icon = 'fa-arrow-right';
+            if (t.transactionType === 'PURCHASE') {
+                badgeClass = 'badge-pill badge-status-active';
+                icon = 'fa-arrow-down text-success';
+            } else if (t.transactionType === 'SALE') {
+                badgeClass = 'badge-pill badge-low-stock';
+                icon = 'fa-arrow-up text-danger';
+            }
+
+            return `
+                <tr>
+                    <td><code>#TXN-${t.transactionId}</code></td>
+                    <td><strong>${t.product ? t.product.productName : 'Product #' + t.product_id}</strong></td>
+                    <td><span class="${badgeClass}"><i class="fas ${icon} me-1"></i> ${t.transactionType}</span></td>
+                    <td><strong class="text-primary">${t.quantity > 0 ? '+' + t.quantity : t.quantity}</strong></td>
+                    <td>${t.previousStock}</td>
+                    <td><span class="font-weight-700">${t.updatedStock}</span></td>
+                    <td>${formatDate(t.transactionDate)}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        showToast('Failed to load transaction audit trail: ' + e.message, 'danger');
+    }
+}
+</script>
+</body>
+</html>

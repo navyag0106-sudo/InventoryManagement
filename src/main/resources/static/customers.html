@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management & Buying History - InventoryPro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="css/style.css?v=1.2" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-container">
+    <aside id="layoutSidebar"></aside>
+
+    <div class="app-main">
+        <div id="layoutHeader"></div>
+
+        <main class="page-content">
+            <div id="alertBox"></div>
+
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-800 text-primary mb-1">Customer Directory & Buying History</h3>
+                    <p class="text-muted mb-0 small">Manage customer contact details, profile records, and track individual sales purchase histories.</p>
+                </div>
+                <button class="btn-primary-custom" onclick="openCreateModal()">
+                    <i class="fas fa-user-plus"></i> Add New Customer
+                </button>
+            </div>
+
+            <!-- Filter & Search Card -->
+            <div class="card-custom mb-4">
+                <div class="card-body-custom py-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-6">
+                            <div class="search-input-group">
+                                <i class="fas fa-search"></i>
+                                <input type="text" class="form-control-custom" id="searchInput" placeholder="Search by customer name, phone number, or address..." oninput="handleSearch()">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select-custom" id="statusFilter" onchange="renderCustomers(filterData())">
+                                <option value="">All Statuses</option>
+                                <option value="ACTIVE">Active Customers</option>
+                                <option value="INACTIVE">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 text-md-end">
+                            <button class="btn-secondary-custom w-100 justify-content-center" onclick="loadCustomers()">
+                                <i class="fas fa-rotate"></i> Refresh List
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers Table Card -->
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h5 class="card-title-custom">
+                        <i class="fas fa-users text-primary"></i> Customer Records (<span id="totalCustomerCount">0</span>)
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-custom-wrapper">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th># ID</th>
+                                    <th>Customer Name</th>
+                                    <th>Phone / Mobile</th>
+                                    <th>Email</th>
+                                    <th>Address</th>
+                                    <th>Joined Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTable">
+                                <tr><td colspan="8" class="text-center py-4 text-muted">Loading customers...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Add / Edit Customer Modal -->
+<div class="modal fade modal-custom" id="customerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerModalTitle">
+                    <i class="fas fa-user-plus text-primary me-2"></i> Add Customer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="customerForm">
+                <input type="hidden" id="customerId">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="custName">Customer Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control-custom" id="custName" placeholder="e.g. Rajesh Sharma" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="custPhone">Phone / Mobile Number <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control-custom" id="custPhone" placeholder="e.g. 9876543210" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="custEmail">Email Address</label>
+                        <input type="email" class="form-control-custom" id="custEmail" placeholder="e.g. rajesh@example.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="custAddress">Billing Address</label>
+                        <textarea class="form-control-custom" id="custAddress" rows="2" placeholder="Street, City, State, PIN"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="custStatus">Account Status</label>
+                        <select class="form-select-custom" id="custStatus">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-custom" id="saveCustomerBtn">
+                        <span id="saveBtnText"><i class="fas fa-save me-1"></i> Save Customer</span>
+                        <span id="saveBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Buying History Modal -->
+<div class="modal fade modal-custom" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">
+                    <i class="fas fa-clock-rotate-left text-primary me-2"></i> Buying History & Invoices
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Customer Summary Header Card -->
+                <div class="p-3 mb-3 bg-light rounded border">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-3">
+                            <span class="text-muted small d-block">Customer:</span>
+                            <strong class="h5 text-primary mb-0" id="histCustomerName">-</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="text-muted small d-block">Mobile Phone:</span>
+                            <strong class="text-dark" id="histCustomerPhone">-</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="text-muted small d-block">Total Orders:</span>
+                            <strong class="h6 text-dark" id="histTotalOrders">0</strong>
+                        </div>
+                        <div class="col-md-3 text-md-end">
+                            <span class="text-muted small d-block">Lifetime Purchases:</span>
+                            <strong class="h4 text-success" id="histTotalSpent">₹0.00</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="table-responsive border rounded">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Items Breakdown</th>
+                                <th>Discount</th>
+                                <th>Total Paid</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Loading purchase history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade modal-custom" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-triangle-exclamation me-2"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">Are you sure you want to delete customer <strong id="deleteCustName"></strong>?</p>
+                <small class="text-muted">This action is permanent and cannot be undone.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash-alt me-1"></i> Delete Customer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script>
+let customersList = [];
+let customerModal = null;
+let historyModal = null;
+let deleteModal = null;
+let deleteTargetId = null;
+
+(async function init() {
+    await requireLogin();
+    renderLayout('customers.html', 'Customers', 'Customer Directory');
+
+    customerModal = new bootstrap.Modal(document.getElementById('customerModal'));
+    historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+    await loadCustomers();
+})();
+
+async function loadCustomers() {
+    showSkeleton('customersTable', 5, 8);
+    try {
+        customersList = await apiRequest('/customers');
+        renderCustomers(filterData());
+    } catch (e) {
+        showToast('Failed to load customers: ' + e.message, 'danger');
+    }
+}
+
+function handleSearch() {
+    renderCustomers(filterData());
+}
+
+function filterData() {
+    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+
+    return customersList.filter(c => {
+        const matchesTerm = !term ||
+            (c.name && c.name.toLowerCase().includes(term)) ||
+            (c.phone && c.phone.toLowerCase().includes(term)) ||
+            (c.address && c.address.toLowerCase().includes(term)) ||
+            (c.email && c.email.toLowerCase().includes(term));
+        const matchesStatus = !status || c.status === status;
+        return matchesTerm && matchesStatus;
+    });
+}
+
+function renderCustomers(customers) {
+    document.getElementById('totalCustomerCount').textContent = customers.length;
+    const tbody = document.getElementById('customersTable');
+
+    if (!customers.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-users-slash"></i></div>
+                        <h6 class="empty-state-title">No customers found</h6>
+                        <p class="empty-state-text">Add your first customer using the button above.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const user = getUser();
+    const isAdmin = user && (user.role || '').toUpperCase() === 'ADMIN';
+
+    tbody.innerHTML = customers.map(c => `
+        <tr>
+            <td><code>#CUST-${c.customerId}</code></td>
+            <td><strong>${c.name}</strong></td>
+            <td><code><i class="fas fa-phone-alt text-primary me-1"></i> ${c.phone}</code></td>
+            <td>${c.email ? `<a href="mailto:${c.email}">${c.email}</a>` : '<span class="text-muted small">-</span>'}</td>
+            <td><small class="text-secondary text-truncate d-inline-block" style="max-width: 200px;">${c.address || '-'}</small></td>
+            <td>${formatDate(c.createdDate)}</td>
+            <td>
+                <span class="badge-pill ${c.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}">
+                    ${c.status || 'ACTIVE'}
+                </span>
+            </td>
+            <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" title="View Buying History" onclick='viewHistory(${JSON.stringify(c).replace(/'/g, "&apos;")})'>
+                        <i class="fas fa-receipt me-1"></i> History
+                    </button>
+                    <button class="btn btn-outline-secondary" title="Edit Customer" onclick='openEditModal(${JSON.stringify(c).replace(/'/g, "&apos;")})'>
+                        <i class="fas fa-pencil"></i>
+                    </button>
+                    ${isAdmin ? `
+                    <button class="btn btn-outline-danger" title="Delete Customer" onclick="openDeleteModal(${c.customerId}, '${c.name.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>` : ''}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openCreateModal() {
+    document.getElementById('customerForm').reset();
+    document.getElementById('customerId').value = '';
+    document.getElementById('customerModalTitle').innerHTML = '<i class="fas fa-user-plus text-primary me-2"></i> Add New Customer';
+    customerModal.show();
+}
+
+function openEditModal(c) {
+    document.getElementById('customerId').value = c.customerId;
+    document.getElementById('custName').value = c.name;
+    document.getElementById('custPhone').value = c.phone;
+    document.getElementById('custEmail').value = c.email || '';
+    document.getElementById('custAddress').value = c.address || '';
+    document.getElementById('custStatus').value = c.status || 'ACTIVE';
+    document.getElementById('customerModalTitle').innerHTML = '<i class="fas fa-user-pen text-primary me-2"></i> Edit Customer';
+    customerModal.show();
+}
+
+document.getElementById('customerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('customerId').value;
+    const body = {
+        name: document.getElementById('custName').value.trim(),
+        phone: document.getElementById('custPhone').value.trim(),
+        email: document.getElementById('custEmail').value.trim(),
+        address: document.getElementById('custAddress').value.trim(),
+        status: document.getElementById('custStatus').value
+    };
+
+    const btn = document.getElementById('saveCustomerBtn');
+    const text = document.getElementById('saveBtnText');
+    const spinner = document.getElementById('saveBtnSpinner');
+
+    btn.disabled = true;
+    text.classList.add('d-none');
+    spinner.classList.remove('d-none');
+
+    try {
+        if (id) {
+            await apiRequest(`/customers/${id}`, 'PUT', body);
+            showToast('Customer profile updated successfully!', 'success');
+        } else {
+            await apiRequest('/customers', 'POST', body);
+            showToast('New customer added successfully!', 'success');
+        }
+        customerModal.hide();
+        await loadCustomers();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        text.classList.remove('d-none');
+        spinner.classList.add('d-none');
+    }
+});
+
+async function viewHistory(customer) {
+    document.getElementById('histCustomerName').textContent = customer.name;
+    document.getElementById('histCustomerPhone').textContent = customer.phone;
+
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Loading buying history...</td></tr>';
+    historyModal.show();
+
+    try {
+        const sales = await apiRequest(`/customers/${customer.customerId}/sales`);
+        document.getElementById('histTotalOrders').textContent = sales.length;
+
+        let totalSpent = 0;
+        sales.forEach(s => totalSpent += (s.totalAmount || 0));
+        document.getElementById('histTotalSpent').textContent = formatCurrency(totalSpent);
+
+        if (!sales.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-shopping-cart fa-2x mb-2 d-block text-muted"></i> No purchase orders recorded for this customer yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = sales.map(s => {
+            const items = (s.saleItems || []).map(it => `
+                <div class="small">
+                    <strong>${it.product ? it.product.productName : 'Item'}</strong> &times; ${it.quantity} @ ${formatCurrency(it.sellingPrice)}
+                    ${it.discountPercentage && it.discountPercentage > 0 ? `<span class="badge bg-warning text-dark py-0">-${it.discountPercentage}%</span>` : ''}
+                </div>
+            `).join('');
+
+            return `
+                <tr>
+                    <td><code>#INV-${s.saleId}</code></td>
+                    <td>${formatDate(s.saleDate)}</td>
+                    <td>${items || '<span class="text-muted small">-</span>'}</td>
+                    <td>${s.discountPercentage && s.discountPercentage > 0 ? `<span class="badge bg-warning text-dark">${s.discountPercentage}% (-${formatCurrency(s.discountAmount || 0)})</span>` : '<span class="text-muted small">0%</span>'}</td>
+                    <td><strong class="text-success">${formatCurrency(s.totalAmount)}</strong></td>
+                    <td><span class="badge-pill badge-status-active"><i class="fas fa-check-circle me-1"></i> ${s.paymentStatus || 'PAID'}</span></td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+    }
+}
+
+function openDeleteModal(id, name) {
+    deleteTargetId = id;
+    document.getElementById('deleteCustName').textContent = name;
+    deleteModal.show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (!deleteTargetId) return;
+    try {
+        await apiRequest(`/customers/${deleteTargetId}`, 'DELETE');
+        showToast('Customer record deleted.', 'success');
+        deleteModal.hide();
+        await loadCustomers();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    }
+});
+</script>
+</body>
+</html>

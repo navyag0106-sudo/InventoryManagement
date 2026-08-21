@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Analytics - InventoryPro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-container">
+    <aside id="layoutSidebar"></aside>
+
+    <div class="app-main">
+        <div id="layoutHeader"></div>
+
+        <main class="page-content">
+            <div id="alertBox"></div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-800 text-primary mb-1">Reports & Business Analytics</h3>
+                    <p class="text-muted mb-0 small">Export data summaries, inspect historical movements, and audit operations.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn-secondary-custom" onclick="exportCSV()">
+                        <i class="fas fa-file-csv text-success"></i> Export CSV
+                    </button>
+                    <button class="btn-secondary-custom" onclick="window.print()">
+                        <i class="fas fa-print text-primary"></i> Print Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Navigation Tabs -->
+            <div class="card-custom mb-0" style="border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none;">
+                <div class="card-body-custom py-2">
+                    <ul class="nav nav-pills gap-1" id="reportTabs">
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-primary-custom" data-tab="products" onclick="switchReport('products', this)">
+                                <i class="fas fa-boxes me-1"></i> Products Report
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-secondary-custom" data-tab="purchases" onclick="switchReport('purchases', this)">
+                                <i class="fas fa-truck-loading me-1"></i> Purchases Report
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-secondary-custom" data-tab="sales" onclick="switchReport('sales', this)">
+                                <i class="fas fa-shopping-cart me-1"></i> Sales Report
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-secondary-custom" data-tab="stock" onclick="switchReport('stock', this)">
+                                <i class="fas fa-warehouse me-1"></i> Stock Flow Report
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-secondary-custom" data-tab="lowstock" onclick="switchReport('lowstock', this)">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i> Low Stock Report
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-secondary-custom" data-tab="daterange" onclick="switchReport('daterange', this)">
+                                <i class="fas fa-calendar-alt text-info me-1"></i> Date Range Analytics
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Date Range Filter Bar (Visible in Date Range mode) -->
+            <div id="dateRangeFilterSection" class="card-custom mb-3 border-top-0 d-none">
+                <div class="card-body-custom py-3">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-600 mb-1">From Date</label>
+                            <input type="date" id="reportFromDate" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-600 mb-1">To Date</label>
+                            <input type="date" id="reportToDate" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary-custom w-100" onclick="loadDateRangeAnalytics()">
+                                <i class="fas fa-filter me-1"></i> Filter Period Analytics
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Range KPI Cards -->
+            <div id="dateRangeCardsSection" class="row g-2 mb-3 d-none">
+                <div class="col-md-2">
+                    <div class="card-custom text-center py-3">
+                        <div class="text-muted extra-small font-weight-600">Total Sales Revenue</div>
+                        <h6 class="text-success font-weight-800 my-1" id="kpiSalesAmount">₹0.00</h6>
+                        <div class="text-muted extra-small" id="kpiSalesCount">0 Sales</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card-custom text-center py-3">
+                        <div class="text-muted extra-small font-weight-600">Total Purchases</div>
+                        <h6 class="text-primary font-weight-800 my-1" id="kpiPurchaseAmount">₹0.00</h6>
+                        <div class="text-muted extra-small" id="kpiPurchaseCount">0 Orders</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card-custom text-center py-3">
+                        <div class="text-muted extra-small font-weight-600">Total Profit</div>
+                        <h6 class="font-weight-800 my-1" id="kpiProfitAmount">₹0.00</h6>
+                        <div class="text-muted extra-small">Selling Price - Unit Cost</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card-custom text-center py-3">
+                        <div class="text-muted extra-small font-weight-600">Discounts Offered</div>
+                        <h6 class="text-warning font-weight-800 my-1" id="kpiDiscountAmount">₹0.00</h6>
+                        <div class="text-muted extra-small">Total Discount</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card-custom text-center py-3">
+                        <div class="text-muted extra-small font-weight-600">Items Sold / Bought</div>
+                        <h6 class="text-dark font-weight-800 my-1"><span id="kpiProductsSold" class="text-success">0</span> / <span id="kpiProductsPurchased" class="text-primary">0</span></h6>
+                        <div class="text-muted extra-small">Units Quantity</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card-custom text-center py-3">
+                        <div class="text-muted extra-small font-weight-600">New Customers</div>
+                        <h6 class="text-info font-weight-800 my-1" id="kpiCustomerCount">0</h6>
+                        <div class="text-muted extra-small">Registered</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Content Table Card -->
+            <div class="card-custom" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                <div class="card-header-custom">
+                    <h5 class="card-title-custom" id="reportHeading">
+                        <i class="fas fa-chart-line text-primary"></i> Product Inventory Valuation
+                    </h5>
+                    <div class="text-muted small" id="reportRecordCount">0 records</div>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-custom-wrapper">
+                        <table class="table-custom" id="reportPrintTable">
+                            <thead id="reportHead"></thead>
+                            <tbody id="reportBody">
+                                <tr><td class="text-center py-4 text-muted">Loading report data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script>
+let currentReportData = [];
+let currentDateRangeFullData = null;
+let currentReportType = 'products';
+
+(async function init() {
+    await requireLogin('ADMIN');
+    renderLayout('reports.html', 'Reports', 'Business Analytics');
+
+    // Default dates for date range picker
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setMonth(today.getMonth() - 1);
+
+    document.getElementById('reportToDate').value = today.toISOString().split('T')[0];
+    document.getElementById('reportFromDate').value = lastMonth.toISOString().split('T')[0];
+
+    await loadReport('products');
+})();
+
+function switchReport(type, btn) {
+    currentReportType = type;
+    document.querySelectorAll('#reportTabs button').forEach(b => {
+        b.className = 'btn btn-sm btn-secondary-custom';
+    });
+    btn.className = 'btn btn-sm btn-primary-custom';
+
+    const filterSec = document.getElementById('dateRangeFilterSection');
+    const cardsSec = document.getElementById('dateRangeCardsSection');
+    if (type === 'daterange') {
+        filterSec.classList.remove('d-none');
+        cardsSec.classList.remove('d-none');
+    } else {
+        filterSec.classList.add('d-none');
+        cardsSec.classList.add('d-none');
+    }
+
+    loadReport(type);
+}
+
+async function loadDateRangeAnalytics() {
+    await loadReport('daterange');
+}
+
+async function loadReport(tab) {
+    currentReportType = tab;
+    const head = document.getElementById('reportHead');
+    const body = document.getElementById('reportBody');
+    showSkeleton('reportBody', 5, 6);
+
+    try {
+        if (tab === 'daterange') {
+            const fromDate = document.getElementById('reportFromDate').value;
+            const toDate = document.getElementById('reportToDate').value;
+
+            document.getElementById('reportHeading').innerHTML = `<i class="fas fa-calendar-alt text-info me-2"></i> Date Range Analytics (${fromDate} to ${toDate})`;
+            
+            // Fetch date range data and full product catalog concurrently to get accurate unit costs
+            const [data, allProducts] = await Promise.all([
+                apiRequest(`/reports/date-range?fromDate=${fromDate}&toDate=${toDate}`),
+                apiRequest('/reports/products')
+            ]);
+            
+            currentDateRangeFullData = data;
+            currentReportData = data.salesList || [];
+
+            // Build product cost lookup map (productId -> unitPrice)
+            const productCostMap = {};
+            if (allProducts && allProducts.length) {
+                allProducts.forEach(p => {
+                    if (p.productId) {
+                        productCostMap[p.productId] = p.unitPrice !== undefined && p.unitPrice !== null ? p.unitPrice : 0;
+                    }
+                });
+            }
+
+            // Compute dynamic fallback values directly from returned list arrays
+            const totalDiscount = (data.salesList && data.salesList.length)
+                ? data.salesList.reduce((sum, s) => sum + (s.discountAmount || 0), 0)
+                : (data.totalDiscountAmount || 0);
+
+            const totalSold = (data.salesList && data.salesList.length)
+                ? data.salesList.reduce((sum, s) => sum + (s.saleItems ? s.saleItems.reduce((iSum, i) => iSum + (i.quantity || 0), 0) : 0), 0)
+                : (data.totalProductsSold || 0);
+
+            const totalBought = (data.purchasesList && data.purchasesList.length)
+                ? data.purchasesList.reduce((sum, p) => sum + (p.purchaseItems ? p.purchaseItems.reduce((iSum, i) => iSum + (i.quantity || 0), 0) : 0), 0)
+                : (data.totalProductsPurchased || 0);
+
+            // Compute itemized profit: sum of (sellingPriceCharged - productUnitCost) * quantity
+            let calculatedProfit = 0;
+            if (data.salesList && data.salesList.length) {
+                data.salesList.forEach(s => {
+                    if (s.saleItems && s.saleItems.length) {
+                        s.saleItems.forEach(item => {
+                            const qty = item.quantity || 0;
+                            const sellingPrice = item.sellingPrice || 0;
+                            const pId = item.product ? item.product.productId : null;
+                            const unitCost = (pId && productCostMap[pId] !== undefined)
+                                ? productCostMap[pId]
+                                : ((item.product && item.product.unitPrice !== undefined) ? item.product.unitPrice : 0);
+
+                            calculatedProfit += (sellingPrice - unitCost) * qty;
+                        });
+                    }
+                });
+            }
+
+            const finalProfit = (data.totalProfit !== undefined && data.totalProfit !== data.totalSalesAmount)
+                ? data.totalProfit
+                : Math.round(calculatedProfit * 100.0) / 100.0;
+
+            // Update KPI cards
+            document.getElementById('kpiSalesAmount').textContent = formatCurrency(data.totalSalesAmount || 0);
+            document.getElementById('kpiSalesCount').textContent = `${data.salesCount || 0} Sales Orders`;
+            document.getElementById('kpiPurchaseAmount').textContent = formatCurrency(data.totalPurchaseAmount || 0);
+            document.getElementById('kpiPurchaseCount').textContent = `${data.purchaseCount || 0} Orders`;
+            
+            const profitEl = document.getElementById('kpiProfitAmount');
+            profitEl.textContent = formatCurrency(finalProfit);
+            profitEl.className = finalProfit >= 0 ? 'text-success font-weight-800 my-1' : 'text-danger font-weight-800 my-1';
+
+            document.getElementById('kpiDiscountAmount').textContent = formatCurrency(totalDiscount);
+            document.getElementById('kpiProductsSold').textContent = totalSold;
+            document.getElementById('kpiProductsPurchased').textContent = totalBought;
+            document.getElementById('kpiCustomerCount').textContent = `${data.customerCount || 0}`;
+
+            document.getElementById('reportRecordCount').textContent = `${data.salesCount || 0} sales, ${data.purchaseCount || 0} purchases, ${data.customerCount || 0} customers`;
+
+            head.innerHTML = '<tr><th>Category</th><th>Details / Reference</th><th>Date</th><th>Units / Items</th><th>Discount</th><th>Total Amount</th></tr>';
+            
+            let html = '';
+            html += `<tr class="table-light"><td colspan="6"><strong><i class="fas fa-shopping-cart text-success me-1"></i> Sales Orders (${data.salesCount} Orders, ${totalSold} Items Sold, Total Discount Offered: ${formatCurrency(totalDiscount)})</strong></td></tr>`;
+            if (!data.salesList || !data.salesList.length) {
+                html += '<tr><td colspan="6" class="text-center py-2 text-muted">No sales orders in this date range.</td></tr>';
+            } else {
+                html += data.salesList.map(s => {
+                    const totalQty = s.saleItems ? s.saleItems.reduce((acc, i) => acc + (i.quantity || 0), 0) : 0;
+                    return `
+                    <tr>
+                        <td><span class="badge-pill bg-success-subtle text-success border border-success">Sale Order</span></td>
+                        <td><strong>#INV-${s.saleId}</strong> (${s.customerName})</td>
+                        <td>${formatDate(s.saleDate)}</td>
+                        <td>${totalQty} units (${s.saleItems ? s.saleItems.length : 0} items)</td>
+                        <td><span class="text-warning font-weight-600">${formatCurrency(s.discountAmount || 0)}</span></td>
+                        <td><strong class="text-success">${formatCurrency(s.totalAmount)}</strong></td>
+                    </tr>
+                `;}).join('');
+            }
+
+            html += `<tr class="table-light"><td colspan="6"><strong><i class="fas fa-truck-loading text-primary me-1"></i> Supplier Purchase Orders (${data.purchaseCount} Orders, ${totalBought} Items Bought)</strong></td></tr>`;
+            if (!data.purchasesList || !data.purchasesList.length) {
+                html += '<tr><td colspan="6" class="text-center py-2 text-muted">No purchase orders in this date range.</td></tr>';
+            } else {
+                html += data.purchasesList.map(p => {
+                    const totalQty = p.purchaseItems ? p.purchaseItems.reduce((acc, i) => acc + (i.quantity || 0), 0) : 0;
+                    return `
+                    <tr>
+                        <td><span class="badge-pill bg-primary-subtle text-primary border border-primary">Purchase Order</span></td>
+                        <td><strong>#PO-${p.purchaseId}</strong> (${p.supplier ? p.supplier.supplierName : 'Supplier'})</td>
+                        <td>${formatDate(p.purchaseDate)}</td>
+                        <td>${totalQty} units (${p.purchaseItems ? p.purchaseItems.length : 0} items)</td>
+                        <td>-</td>
+                        <td><strong class="text-primary">${formatCurrency(p.totalAmount)}</strong></td>
+                    </tr>
+                `;}).join('');
+            }
+
+            html += `<tr class="table-light"><td colspan="6"><strong><i class="fas fa-users text-info me-1"></i> New Registered Customers (${data.customerCount})</strong></td></tr>`;
+            if (!data.customersList || !data.customersList.length) {
+                html += '<tr><td colspan="6" class="text-center py-2 text-muted">No new customers registered in this date range.</td></tr>';
+            } else {
+                html += data.customersList.map(c => `
+                    <tr>
+                        <td><span class="badge-pill bg-info-subtle text-info border border-info">New Customer</span></td>
+                        <td><strong>${c.name}</strong> (${c.phone})</td>
+                        <td>${formatDate(c.createdDate)}</td>
+                        <td>Status: ${c.status || 'ACTIVE'}</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                `).join('');
+            }
+
+            body.innerHTML = html;
+            return;
+        }
+
+        if (tab === 'products') {
+            document.getElementById('reportHeading').innerHTML = '<i class="fas fa-boxes text-primary me-2"></i> Product Inventory Valuation Report';
+            const data = await apiRequest('/reports/products');
+            currentReportData = data;
+            document.getElementById('reportRecordCount').textContent = `${data.length} products`;
+
+            head.innerHTML = '<tr><th>ID</th><th>Code</th><th>Product Name</th><th>Category</th><th>Current Stock</th><th>Min Alert</th><th>Unit Cost</th><th>Selling Price</th></tr>';
+            if (!data.length) {
+                body.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No product records found.</td></tr>';
+            } else {
+                body.innerHTML = data.map(p => `
+                    <tr>
+                        <td><code>#${p.productId}</code></td>
+                        <td><code>${p.productCode}</code></td>
+                        <td><strong>${p.productName}</strong></td>
+                        <td><span class="badge-pill bg-light border text-secondary">${p.category ? p.category.categoryName : '-'}</span></td>
+                        <td><span class="font-weight-700">${p.quantity}</span></td>
+                        <td>${p.minimumStockLevel}</td>
+                        <td>${formatCurrency(p.unitPrice)}</td>
+                        <td><strong class="text-primary">${formatCurrency(p.sellingPrice)}</strong></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        if (tab === 'purchases') {
+            document.getElementById('reportHeading').innerHTML = '<i class="fas fa-truck-loading text-primary me-2"></i> Supplier Purchase History Report';
+            const data = await apiRequest('/reports/purchases');
+            currentReportData = data;
+            document.getElementById('reportRecordCount').textContent = `${data.length} purchase orders`;
+
+            head.innerHTML = '<tr><th>Purchase ID</th><th>Supplier</th><th>Order Date</th><th>Items</th><th>Total Amount</th><th>Payment Status</th></tr>';
+            if (!data.length) {
+                body.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No purchase orders found.</td></tr>';
+            } else {
+                body.innerHTML = data.map(p => `
+                    <tr>
+                        <td><code>#PO-${p.purchaseId}</code></td>
+                        <td><strong>${p.supplier ? p.supplier.supplierName : '-'}</strong></td>
+                        <td>${formatDate(p.purchaseDate)}</td>
+                        <td>${p.purchaseItems ? p.purchaseItems.length : 0} items</td>
+                        <td><strong class="text-primary">${formatCurrency(p.totalAmount)}</strong></td>
+                        <td><span class="badge-pill badge-status-active">${p.paymentStatus || 'PAID'}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        if (tab === 'sales') {
+            document.getElementById('reportHeading').innerHTML = '<i class="fas fa-shopping-cart text-success me-2"></i> Sales & Revenue Invoices Report';
+            const data = await apiRequest('/reports/sales');
+            currentReportData = data;
+            document.getElementById('reportRecordCount').textContent = `${data.length} invoices`;
+
+            head.innerHTML = '<tr><th>Invoice #</th><th>Customer Name</th><th>Date</th><th>Items Count</th><th>Total Revenue</th><th>Payment Method</th><th>Status</th></tr>';
+            if (!data.length) {
+                body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No sales invoices found.</td></tr>';
+            } else {
+                body.innerHTML = data.map(s => {
+                    const isOnline = (s.paymentMethod || 'CASH').toUpperCase() === 'ONLINE';
+                    const methodBadge = isOnline 
+                        ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="fas fa-credit-card me-1"></i> Online</span>' 
+                        : '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-money-bill-wave me-1"></i> Cash</span>';
+
+                    return `
+                    <tr>
+                        <td><code>#INV-${s.saleId}</code></td>
+                        <td><strong>${s.customerName}</strong></td>
+                        <td>${formatDate(s.saleDate)}</td>
+                        <td>${s.saleItems ? s.saleItems.length : 0} items</td>
+                        <td><strong class="text-success">${formatCurrency(s.totalAmount)}</strong></td>
+                        <td>${methodBadge}</td>
+                        <td><span class="badge-pill badge-status-active">${s.paymentStatus || 'PAID'}</span></td>
+                    </tr>
+                `;}).join('');
+            }
+        }
+
+        if (tab === 'stock') {
+            document.getElementById('reportHeading').innerHTML = '<i class="fas fa-warehouse text-info me-2"></i> Stock Movement & Balance Report';
+            const data = await apiRequest('/reports/stock');
+            currentReportData = data;
+            document.getElementById('reportRecordCount').textContent = `${data.length} product balances`;
+
+            head.innerHTML = '<tr><th>Product</th><th>Opening Stock</th><th>Purchased Qty</th><th>Sold Qty</th><th>Current Balance</th></tr>';
+            if (!data.length) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No stock flow records.</td></tr>';
+            } else {
+                body.innerHTML = data.map(r => `
+                    <tr>
+                        <td><strong>${r.product}</strong></td>
+                        <td>${r.openingStock}</td>
+                        <td><span class="text-primary font-weight-600">+${r.purchasedQuantity}</span></td>
+                        <td><span class="text-danger font-weight-600">-${r.soldQuantity}</span></td>
+                        <td><span class="font-weight-700 h6 text-dark">${r.currentStock}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        if (tab === 'lowstock') {
+            document.getElementById('reportHeading').innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-2"></i> Low Stock & Reorder Alert Report';
+            const data = await apiRequest('/reports/low-stock');
+            currentReportData = data;
+            document.getElementById('reportRecordCount').textContent = `${data.length} items needing reorder`;
+
+            head.innerHTML = '<tr><th>Code</th><th>Product Name</th><th>Category</th><th>Current Stock</th><th>Min Required</th><th>Stock Status</th></tr>';
+            if (!data.length) {
+                body.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-success"><i class="fas fa-check-circle me-1"></i> No low stock products! All inventory levels are healthy.</td></tr>';
+            } else {
+                body.innerHTML = data.map(p => `
+                    <tr>
+                        <td><code>${p.productCode}</code></td>
+                        <td><strong>${p.productName}</strong></td>
+                        <td>${p.category ? p.category.categoryName : '-'}</td>
+                        <td><span class="badge-pill ${p.quantity === 0 ? 'badge-out-of-stock' : 'badge-low-stock'}">${p.quantity} units</span></td>
+                        <td>${p.minimumStockLevel} units</td>
+                        <td>${stockBadge(p.stockStatus, p.quantity, p.minimumStockLevel)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (e) {
+        showToast('Failed to load report: ' + e.message, 'danger');
+    }
+}
+
+function exportCSV() {
+    if (currentReportType === 'daterange') {
+        if (!currentDateRangeFullData) {
+            showToast('No date range report data loaded to export.', 'warning');
+            return;
+        }
+
+        const data = currentDateRangeFullData;
+        const rows = [];
+        rows.push(['DATE RANGE ANALYTICS REPORT']);
+        rows.push(['From Date', data.fromDate || '']);
+        rows.push(['To Date', data.toDate || '']);
+        rows.push([]);
+        rows.push(['SUMMARY METRICS']);
+        rows.push(['Total Sales Revenue', data.totalSalesAmount || 0]);
+        rows.push(['Total Sales Orders Count', data.salesCount || 0]);
+        rows.push(['Total Purchase Expenses', data.totalPurchaseAmount || 0]);
+        rows.push(['Total Purchase Orders Count', data.purchaseCount || 0]);
+        rows.push(['Total Net Profit', data.totalProfit || 0]);
+        rows.push(['Total Discount Offered', data.totalDiscountAmount || 0]);
+        rows.push(['Total Products Sold (Units)', data.totalProductsSold || 0]);
+        rows.push(['Total Products Purchased (Units)', data.totalProductsPurchased || 0]);
+        rows.push(['New Customers Registered', data.customerCount || 0]);
+        rows.push([]);
+
+        // Sales Details
+        rows.push(['SALES ORDERS']);
+        rows.push(['Invoice ID', 'Customer Name', 'Customer Phone', 'Date', 'Discount Amount', 'Total Amount']);
+        if (data.salesList && data.salesList.length) {
+            data.salesList.forEach(s => {
+                rows.push([
+                    `#INV-${s.saleId}`,
+                    `"${(s.customerName || '').replace(/"/g, '""')}"`,
+                    `"${(s.customerPhone || '').replace(/"/g, '""')}"`,
+                    s.saleDate || '',
+                    s.discountAmount || 0,
+                    s.totalAmount || 0
+                ]);
+            });
+        } else {
+            rows.push(['No sales orders']);
+        }
+        rows.push([]);
+
+        // Purchases Details
+        rows.push(['PURCHASE ORDERS']);
+        rows.push(['Purchase ID', 'Supplier Name', 'Date', 'Total Amount']);
+        if (data.purchasesList && data.purchasesList.length) {
+            data.purchasesList.forEach(p => {
+                rows.push([
+                    `#PO-${p.purchaseId}`,
+                    `"${(p.supplier ? p.supplier.supplierName : '').replace(/"/g, '""')}"`,
+                    p.purchaseDate || '',
+                    p.totalAmount || 0
+                ]);
+            });
+        } else {
+            rows.push(['No purchase orders']);
+        }
+        rows.push([]);
+
+        // Customers Details
+        rows.push(['NEW CUSTOMERS']);
+        rows.push(['Customer ID', 'Name', 'Phone', 'Email', 'Created Date']);
+        if (data.customersList && data.customersList.length) {
+            data.customersList.forEach(c => {
+                rows.push([
+                    c.customerId,
+                    `"${(c.name || '').replace(/"/g, '""')}"`,
+                    `"${(c.phone || '').replace(/"/g, '""')}"`,
+                    `"${(c.email || '').replace(/"/g, '""')}"`,
+                    c.createdDate || ''
+                ]);
+            });
+        } else {
+            rows.push(['No new customers']);
+        }
+
+        const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map(r => r.join(',')).join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `Date_Range_Analytics_${data.fromDate}_to_${data.toDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showToast('Excel/CSV sheet report downloaded successfully', 'success');
+        return;
+    }
+
+    if (!currentReportData || !currentReportData.length) {
+        showToast('No data available to export.', 'warning');
+        return;
+    }
+
+    const rows = [];
+    const keys = Object.keys(currentReportData[0]).filter(k => typeof currentReportData[0][k] !== 'object');
+    rows.push(keys.join(','));
+
+    currentReportData.forEach(item => {
+        const values = keys.map(k => {
+            let val = item[k] !== undefined && item[k] !== null ? item[k] : '';
+            return `"${String(val).replace(/"/g, '""')}"`;
+        });
+        rows.push(values.join(','));
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `inventory_report_${currentReportType}_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    showToast('CSV export downloaded successfully', 'success');
+}
+</script>
+</body>
+</html>

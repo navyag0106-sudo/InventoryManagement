@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - InventoryPro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-container">
+    <aside id="layoutSidebar"></aside>
+
+    <div class="app-main">
+        <div id="layoutHeader"></div>
+
+        <main class="page-content">
+            <div id="alertBox"></div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h3 class="font-weight-800 text-primary mb-1">User & Role Management</h3>
+                    <p class="text-muted mb-0 small">Manage system staff accounts, assign administrative privileges, and toggle access.</p>
+                </div>
+                <button class="btn-primary-custom" onclick="openUserModal()">
+                    <i class="fas fa-user-plus"></i> Add New User
+                </button>
+            </div>
+
+            <!-- Users Table Card -->
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <h5 class="card-title-custom">
+                        <i class="fas fa-users-cog text-primary"></i> System Users (<span id="userCount">0</span>)
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-custom-wrapper">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">ID</th>
+                                    <th>User</th>
+                                    <th>Full Name</th>
+                                    <th>Role / Access Level</th>
+                                    <th>Account Status</th>
+                                    <th>Created Date</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable">
+                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade modal-custom" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalTitle">
+                    <i class="fas fa-user-plus text-primary me-2"></i> Add System User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="userForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="newUsername">Username <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control-custom" id="newUsername" placeholder="e.g. jdoe" required minlength="3">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="newFullName">Full Name</label>
+                        <input type="text" class="form-control-custom" id="newFullName" placeholder="e.g. John Doe">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="newRole">Role</label>
+                        <select class="form-select-custom" id="newRole" required>
+                            <option value="USER">Staff / Operator (Standard Access)</option>
+                            <option value="ADMIN">Administrator (Full Access)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="newPassword">Initial Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control-custom" id="newPassword" placeholder="Min. 4 characters" required minlength="4">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-custom" id="saveUserBtn">
+                        <span id="saveUserBtnText"><i class="fas fa-save me-1"></i> Create User</span>
+                        <span id="saveUserBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade modal-custom" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-pen text-primary me-2"></i> Edit User Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-3">
+                        <label class="form-label-custom">Username</label>
+                        <input type="text" class="form-control-custom bg-light" id="editUsername" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="editFullName">Full Name</label>
+                        <input type="text" class="form-control-custom" id="editFullName" placeholder="Full name">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label-custom" for="editRole">Role</label>
+                            <select class="form-select-custom" id="editRole" required>
+                                <option value="USER">USER (Staff)</option>
+                                <option value="ADMIN">ADMIN (Full Admin)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label-custom" for="editStatus">Status</label>
+                            <select class="form-select-custom" id="editStatus" required>
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="INACTIVE">INACTIVE</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-custom" for="editPassword">Reset Password (Optional)</label>
+                        <input type="password" class="form-control-custom" id="editPassword" placeholder="Leave blank to keep unchanged">
+                        <small class="text-muted">Only fill if you wish to overwrite the user's password.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-custom" id="updateUserBtn">
+                        <span id="updateUserBtnText"><i class="fas fa-check me-1"></i> Update User</span>
+                        <span id="updateUserBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade modal-custom" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title text-white"><i class="fas fa-trash-alt me-2"></i> Delete User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4 text-center">
+                <div class="text-danger mb-3"><i class="fas fa-triangle-exclamation fa-3x"></i></div>
+                <h6 class="font-weight-700">Delete this user account?</h6>
+                <p class="text-muted small mb-0" id="deleteUserNameDisplay"></p>
+                <input type="hidden" id="deleteUserId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-danger-custom" onclick="executeDeleteUser()">
+                    <i class="fas fa-trash-alt"></i> Delete Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="js/api.js"></script>
+<script>
+let allUsers = [];
+let userModal = null;
+let editUserModal = null;
+let deleteUserModal = null;
+let currentAdmin = null;
+
+(async function init() {
+    currentAdmin = await requireLogin('ADMIN');
+    if (!currentAdmin) return;
+
+    renderLayout('users.html', 'User Management', 'Admin / Users');
+
+    userModal = new bootstrap.Modal(document.getElementById('userModal'));
+    editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    deleteUserModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+
+    await loadUsers();
+})();
+
+async function loadUsers() {
+    showSkeleton('usersTable', 4, 7);
+    try {
+        allUsers = await apiRequest('/users');
+        document.getElementById('userCount').textContent = allUsers.length;
+        renderUsers(allUsers);
+    } catch (e) {
+        showToast('Failed to load users: ' + e.message, 'danger');
+    }
+}
+
+function renderUsers(users) {
+    const tbody = document.getElementById('usersTable');
+    if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No users found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = users.map(u => {
+        const isAdmin = (u.role || '').toUpperCase() === 'ADMIN';
+        const isSelf = currentAdmin && (currentAdmin.userId === u.userId || currentAdmin.username === u.username);
+
+        return `
+            <tr>
+                <td><code>#${u.userId}</code></td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                            ${(u.fullName || u.username).charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <strong>${u.username}</strong>
+                            ${isSelf ? '<span class="badge bg-secondary ms-1" style="font-size: 0.65rem;">You</span>' : ''}
+                        </div>
+                    </div>
+                </td>
+                <td>${u.fullName || '<span class="text-muted">-</span>'}</td>
+                <td><span class="badge-pill ${isAdmin ? 'badge-role-admin' : 'badge-role-user'}">${u.role}</span></td>
+                <td><span class="badge-pill ${u.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}">${u.status || 'ACTIVE'}</span></td>
+                <td><small class="text-muted">${formatDate(u.createdDate)}</small></td>
+                <td class="text-end">
+                    <div class="d-inline-flex gap-1">
+                        <button class="btn-icon-action" title="Edit" onclick='openEditModal(${JSON.stringify(u).replace(/'/g, "&apos;")})'>
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        ${!isSelf ? `
+                        <button class="btn-icon-action btn-icon-danger" title="Delete" onclick="confirmDeleteUser(${u.userId}, '${u.username}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function openUserModal() {
+    document.getElementById('userForm').reset();
+    userModal.show();
+}
+
+document.getElementById('userForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('saveUserBtn');
+    const btnText = document.getElementById('saveUserBtnText');
+    const btnSpinner = document.getElementById('saveUserBtnSpinner');
+
+    const payload = {
+        username: document.getElementById('newUsername').value.trim(),
+        fullName: document.getElementById('newFullName').value.trim(),
+        role: document.getElementById('newRole').value,
+        password: document.getElementById('newPassword').value
+    };
+
+    saveBtn.disabled = true;
+    btnText.classList.add('d-none');
+    btnSpinner.classList.remove('d-none');
+
+    try {
+        await apiRequest('/users', 'POST', payload);
+        showToast('User created successfully', 'success');
+        userModal.hide();
+        await loadUsers();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    } finally {
+        saveBtn.disabled = false;
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+    }
+});
+
+function openEditModal(u) {
+    document.getElementById('editUserId').value = u.userId;
+    document.getElementById('editUsername').value = u.username;
+    document.getElementById('editFullName').value = u.fullName || '';
+    document.getElementById('editRole').value = u.role || 'USER';
+    document.getElementById('editStatus').value = u.status || 'ACTIVE';
+    document.getElementById('editPassword').value = '';
+    editUserModal.show();
+}
+
+document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const updateBtn = document.getElementById('updateUserBtn');
+    const btnText = document.getElementById('updateUserBtnText');
+    const btnSpinner = document.getElementById('updateUserBtnSpinner');
+
+    const id = document.getElementById('editUserId').value;
+    const payload = {
+        fullName: document.getElementById('editFullName').value.trim(),
+        role: document.getElementById('editRole').value,
+        status: document.getElementById('editStatus').value
+    };
+    const newPwd = document.getElementById('editPassword').value;
+    if (newPwd) payload.password = newPwd;
+
+    updateBtn.disabled = true;
+    btnText.classList.add('d-none');
+    btnSpinner.classList.remove('d-none');
+
+    try {
+        await apiRequest('/users/' + id, 'PUT', payload);
+        showToast('User updated successfully', 'success');
+        editUserModal.hide();
+        await loadUsers();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    } finally {
+        updateBtn.disabled = false;
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+    }
+});
+
+function confirmDeleteUser(id, username) {
+    document.getElementById('deleteUserId').value = id;
+    document.getElementById('deleteUserNameDisplay').textContent = `User: @${username} (ID: ${id})`;
+    deleteUserModal.show();
+}
+
+async function executeDeleteUser() {
+    const id = document.getElementById('deleteUserId').value;
+    try {
+        await apiRequest('/users/' + id, 'DELETE');
+        showToast('User deleted successfully', 'success');
+        deleteUserModal.hide();
+        await loadUsers();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    }
+}
+</script>
+</body>
+</html>

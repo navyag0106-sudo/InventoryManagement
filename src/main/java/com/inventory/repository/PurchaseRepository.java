@@ -1,0 +1,12 @@
+package com.inventory.repository;
+
+import com.inventory.entity.Purchase;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
+    List<Purchase> findBySupplier_SupplierId(Long supplierId);
+
+    List<Purchase> findByPurchaseDateBetweenOrderByPurchaseDateDesc(java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
+}
