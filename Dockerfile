@@ -1,14 +1,37 @@
-# Step 1: Use Java 8 JRE Runtime Base Image
-FROM eclipse-temurin:8-jre-alpine
+```dockerfile
+# ================================
+# Stage 1: Build the Spring Boot app
+# ================================
+FROM maven:3.8.8-eclipse-temurin-8 AS build
 
-# Set working directory inside container
 WORKDIR /app
 
-# Copy built JAR artifact from target folder
-COPY target/inventory-management-system.jar app.jar
+# Copy Maven configuration first
+COPY pom.xml .
 
-# Expose server port
+# Download dependencies
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN mvn clean package -DskipTests
+
+
+# ================================
+# Stage 2: Run the application
+# ================================
+FROM eclipse-temurin:8-jre
+
+WORKDIR /app
+
+# Copy generated JAR from build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Render provides the PORT environment variable
 EXPOSE 8080
 
-# Run Spring Boot application
+# Start Spring Boot
 ENTRYPOINT ["java", "-jar", "app.jar"]
+```
