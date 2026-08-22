@@ -1,6 +1,7 @@
 /**
  * EasyQRCodeJS / QRCode.js lightweight standalone QR code generator
  */
+package com.inventory.util;
 (function(window) {
     function QR8bitByte(data) {
         this.mode = 4;
