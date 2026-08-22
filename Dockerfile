@@ -1,11 +1,14 @@
-# ================================
-# Stage 1: Build the Spring Boot app
-# ================================
+# ==========================================================
+# Inventory Management System - Dockerfile
+# Spring Boot 2.7.18 / Java 8 / Maven
+# ==========================================================
+
+# ---------- Build stage ----------
 FROM maven:3.8.8-eclipse-temurin-8 AS build
 
 WORKDIR /app
 
-# Copy Maven configuration first
+# Copy pom first for better Docker layer caching
 COPY pom.xml .
 
 # Download dependencies
@@ -14,23 +17,20 @@ RUN mvn dependency:go-offline -B
 # Copy source code
 COPY src ./src
 
-# Build the application
+# Build application
 RUN mvn clean package -DskipTests
 
 
-# ================================
-# Stage 2: Run the application
-# ================================
+# ---------- Runtime stage ----------
 FROM eclipse-temurin:8-jre
 
 WORKDIR /app
 
-# Copy generated JAR from build stage
+# Copy generated JAR
 COPY --from=build /app/target/*.jar app.jar
 
 # Render provides the PORT environment variable
 EXPOSE 8080
 
-# Start Spring Boot
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
+# Start Spring Boot application
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8080}"]
