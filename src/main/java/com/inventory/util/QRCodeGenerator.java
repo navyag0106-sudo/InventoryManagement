@@ -1,4 +1,4 @@
-package com.rental.vehiclerentalsystem.util;
+package com.inventory.util;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
